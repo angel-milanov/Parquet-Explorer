@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import importlib.util
 import struct
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -9,7 +11,18 @@ from parquet_explorer.icon import ICON_SIZES, app_icon, render_pixmap
 
 pytestmark = pytest.mark.gui
 
-ICO_PATH = Path(__file__).resolve().parent.parent / "packaging" / "icon.ico"
+PACKAGING = Path(__file__).resolve().parent.parent / "packaging"
+ICO_PATH = PACKAGING / "icon.ico"
+ICNS_PATH = PACKAGING / "icon.icns"
+
+
+def make_icon_module() -> ModuleType:
+    """Import ``packaging/make_icon.py``, which is a script rather than a package."""
+    spec = importlib.util.spec_from_file_location("make_icon", PACKAGING / "make_icon.py")
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_app_icon_offers_every_size(qapp) -> None:
@@ -31,6 +44,32 @@ def test_render_pixmap_paints_the_body_and_leaves_corners_transparent(qapp) -> N
 
     assert image.pixelColor(32, 32).alpha() == 255
     assert image.pixelColor(0, 0).alpha() == 0
+
+
+def test_committed_icns_matches_the_frames_the_generator_declares() -> None:
+    """The .icns is generated and committed, so it can drift from make_icon.py."""
+    data = ICNS_PATH.read_bytes()
+
+    assert data[:4] == b"icns", "not an icon file"
+    assert struct.unpack(">I", data[4:8])[0] == len(data), "header length is not the file length"
+
+    frames = []
+    offset = 8
+    while offset < len(data):
+        kind = data[offset : offset + 4]
+        # Every ICNS length counts its own 8-byte element header.
+        length = struct.unpack(">I", data[offset + 4 : offset + 8])[0]
+        payload = data[offset + 8 : offset + length]
+
+        assert payload[:4] == b"\x89PNG", f"the {kind!r} frame is not PNG-encoded"
+        # Width and height sit at a fixed offset in the PNG's leading IHDR chunk.
+        width, height = struct.unpack(">II", payload[16:24])
+        assert width == height, f"the {kind!r} frame is not square"
+
+        frames.append((kind, width))
+        offset += length
+
+    assert tuple(frames) == make_icon_module().ICNS_TYPES, "regenerate with: uv run poe icon"
 
 
 def test_committed_ico_matches_the_sizes_the_source_declares() -> None:

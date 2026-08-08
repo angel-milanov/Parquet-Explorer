@@ -89,30 +89,42 @@ jobs:
 
       - name: Package archive
         shell: bash
+        # Everything to be released is gathered in release/: upload-artifact roots
+        # an artifact at the common ancestor of its paths, so mixing directories
+        # here would nest the installers inside the downloaded artifact and leave
+        # `gh release create` pointed at a directory rather than a file.
         run: |
+          mkdir -p release
           cd dist
           if [ "$RUNNER_OS" = "Windows" ]; then
-            7z a "../${{ matrix.asset }}.zip" parquet-explorer
+            7z a "../release/${{ matrix.asset }}.zip" parquet-explorer
           else
-            tar czf "../${{ matrix.asset }}.tar.gz" parquet-explorer
+            tar czf "../release/${{ matrix.asset }}.tar.gz" parquet-explorer
           fi
 
       - name: Install Inno Setup
         if: runner.os == 'Windows'
         run: choco install innosetup --no-progress -y
 
-      - name: Build installer
+      - name: Build Windows installer
         if: runner.os == 'Windows'
+        shell: bash
         # The bundle was built and smoke-tested above, so reuse it.
-        run: uv run python packaging/build_installer.py --skip-bundle
+        run: |
+          uv run python packaging/build_installer.py --skip-bundle
+          cp dist/*-setup.exe release/
+
+      - name: Build macOS disk image
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          uv run python packaging/build_dmg.py --skip-bundle
+          cp dist/*.dmg release/
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset }}
-          path: |
-            ${{ matrix.asset }}.zip
-            ${{ matrix.asset }}.tar.gz
-            dist/*-setup.exe
+          path: release/
           if-no-files-found: error
 
   release:

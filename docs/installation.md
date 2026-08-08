@@ -23,16 +23,21 @@ builds that need no Python installed.
 
 === "macOS"
 
-    Download `parquet-explorer-macos-arm64.tar.gz`, unpack it, and run the
-    `parquet-explorer` binary inside.
+    Download `parquet-explorer-<version>-macos-arm64.dmg`, open it, and drag
+    **Parquet Explorer** onto the Applications shortcut beside it.
 
-    The build is not signed or notarised, so Gatekeeper will object on first
-    launch. Right-click the binary and choose **Open** to get the "open anyway"
-    prompt, or clear the quarantine attribute:
+    The build is signed ad-hoc rather than with a Developer ID, and is not
+    notarised, so Gatekeeper will object on first launch. Right-click the app in
+    Applications and choose **Open** to get the "open anyway" prompt, or clear the
+    quarantine attribute:
 
     ```bash
-    xattr -dr com.apple.quarantine parquet-explorer
+    xattr -dr com.apple.quarantine "/Applications/Parquet Explorer.app"
     ```
+
+    Only Apple silicon is built. If you would rather not install anything,
+    `parquet-explorer-macos-arm64.tar.gz` is the same application as a plain
+    archive — unpack it and run the `parquet-explorer` binary inside.
 
 === "Linux"
 

@@ -78,6 +78,7 @@ default-groups = ["dev", "package"]
 icon = { cmd = "python packaging/make_icon.py", help = "Regenerate packaging/icon.ico" }
 bundle = { cmd = "pyinstaller --noconfirm --clean packaging/parquet-explorer.spec", help = "Build the standalone bundle into dist/" }
 installer = { cmd = "python packaging/build_installer.py", help = "Build the Windows installer (Inno Setup); implies bundle" }
+dmg = { cmd = "python packaging/build_dmg.py", help = "Build the macOS disk image; implies bundle" }
 docs = { cmd = "mkdocs serve", help = "Serve the documentation site with live reload" }
 docs-build = { cmd = "mkdocs build --strict", help = "Build the documentation site into site/" }
 

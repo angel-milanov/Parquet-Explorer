@@ -10,6 +10,12 @@ import sys
 
 SPEC_DIR = SPECPATH  # noqa: F821 - injected by PyInstaller
 IS_WINDOWS = sys.platform == "win32"
+IS_MACOS = sys.platform == "darwin"
+
+# macOS identifies an installed app by this string: it is the key for Launch
+# Services, the preferences domain and the Gatekeeper record.  Like AppId in
+# installer.iss, changing it makes an existing install look like a new app.
+BUNDLE_IDENTIFIER = "io.github.angel-milanov.parquet-explorer"
 
 sys.path.insert(0, os.path.join(SPEC_DIR, os.pardir, "src"))
 from parquet_explorer import __version__  # noqa: E402
@@ -121,7 +127,7 @@ executable = EXE(
     hide_console="hide-early" if IS_WINDOWS else None,
 )
 
-COLLECT(
+collection = COLLECT(
     executable,
     analysis.binaries,
     analysis.datas,
@@ -129,3 +135,31 @@ COLLECT(
     upx=False,
     name="parquet-explorer",
 )
+
+# On macOS the same collected bundle is also wrapped in a .app, which is what the
+# disk image ships and what Finder can launch.  dist/parquet-explorer/ stays as it
+# is, so the smoke test and the tar.gz are unaffected.
+if IS_MACOS:
+    BUNDLE(
+        collection,
+        name="Parquet Explorer.app",
+        icon=os.path.join(SPEC_DIR, "icon.icns"),
+        bundle_identifier=BUNDLE_IDENTIFIER,
+        version=__version__,
+        info_plist={
+            "CFBundleName": "Parquet Explorer",
+            "CFBundleDisplayName": "Parquet Explorer",
+            "CFBundleShortVersionString": __version__,
+            "CFBundleVersion": __version__,
+            "LSApplicationCategoryType": "public.app-category.developer-tools",
+            "LSMinimumSystemVersion": "12.0",
+            # PyInstaller reads console=True above as "this is a command-line tool"
+            # and defaults the bundle to LSBackgroundOnly, which would leave the app
+            # with no Dock icon and no menu bar.  The keys given here are merged over
+            # its defaults, so saying so plainly is the fix; the flag is only about
+            # the Windows console anyway.
+            "LSBackgroundOnly": False,
+            "NSHighResolutionCapable": True,
+            "NSHumanReadableCopyright": "Copyright (c) 2026 Angel Milanov. MIT licensed.",
+        },
+    )

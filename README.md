@@ -45,7 +45,7 @@ result stays on screen so a typo doesn't lose your place.
 
 Standalone builds for Windows, macOS and Linux are attached to every
 [release](https://github.com/angel-milanov/parquet-explorer/releases) — no Python
-needed. Windows has an installer; macOS and Linux are a `tar.gz`.
+needed. Windows has a `setup.exe`, macOS a `.dmg`, Linux a `tar.gz`.
 
 From PyPI:
 
@@ -107,7 +107,7 @@ The code is three modules:
 
 Multi-step packaging commands are named in `[tool.poe.tasks]`; `uv run poe` lists
 them. `bundle` builds the standalone app, `installer` builds the Windows installer,
-`docs` serves this documentation locally.
+`dmg` builds the macOS disk image, `docs` serves this documentation locally.
 
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md), and
 [packaging](https://angel-milanov.github.io/parquet-explorer/packaging/) for how

@@ -25,12 +25,14 @@ uv run pytest -m "not gui"                              # skip everything that b
 ```
 
 Multi-step packaging commands are named in `[tool.poe.tasks]`; `uv run poe` lists them.
-`installer` is Windows-only and needs Inno Setup 6.3+ on PATH.
+`installer` is Windows-only and needs Inno Setup 6.3+ on PATH; `dmg` is macOS-only
+and needs only the `hdiutil` and `codesign` that ship with the OS.
 
 ```bash
 uv run poe bundle      # PyInstaller one-dir bundle into dist/
 uv run poe installer   # bundle, then compile packaging/installer.iss
-uv run poe icon        # regenerate packaging/icon.ico from icon.py
+uv run poe dmg         # bundle, then stage Parquet Explorer.app into a .dmg
+uv run poe icon        # regenerate packaging/icon.{ico,icns} from icon.py
 ```
 
 The shell here is PowerShell. Setting an env var for one command is
@@ -68,12 +70,14 @@ and the status-bar wiring in `MainWindow.run_query()` all have to change togethe
 leaves the previous result in the model, so a typo does not wipe the screen. Tests
 assert both halves of that behaviour.
 
-**The icon has two representations.** `icon.py` draws it at runtime with QPainter
+**The icon has three representations.** `icon.py` draws it at runtime with QPainter
 (used for the window and taskbar); `packaging/make_icon.py` renders the same shapes
-into `packaging/icon.ico`, which is committed because PyInstaller needs a file at
-build time. Change `icon.py` and you must run `uv run poe icon` and commit the
-result — `tests/test_icon.py` compares the committed `.ico` against `ICON_SIZES`
-and fails otherwise.
+into `packaging/icon.ico` and `packaging/icon.icns`, both committed because
+PyInstaller needs a file at build time. Both are written on any platform — an
+`.icns` is a container of PNG frames, so it needs no macOS tooling. Change
+`icon.py` and you must run `uv run poe icon` and commit the result —
+`tests/test_icon.py` compares the committed `.ico` against `ICON_SIZES` and the
+`.icns` against `make_icon.ICNS_TYPES`, and fails otherwise.
 
 **Version is single-sourced.** `__init__.__version__` feeds the CLI banner, the
 Windows version resource in the PyInstaller spec, and the installer version that
@@ -104,5 +108,14 @@ sets `hide_console="hide-early"` so a double-click gets no console window while
 The release workflow greps that output as its smoke test, so it fails loudly if
 either library did not make it into the bundle.
 
+On macOS the spec additionally wraps that bundle in `Parquet Explorer.app`, which
+`packaging/build_dmg.py` ad-hoc-signs (Apple silicon will not run unsigned code) and
+stages beside an `/Applications` symlink inside a `.dmg`. `dist/parquet-explorer/`
+is left in place, so the tarball and the `--version` smoke test are unaffected. The
+app is unnotarised, so first launch still needs right-click → Open. It declares no
+`CFBundleDocumentTypes`: Finder opens documents via `QFileOpenEvent`, not argv, and
+nothing handles that event yet.
+
 `AppId` in `packaging/installer.iss` is how Windows recognises an existing install
-to upgrade in place — never change it.
+to upgrade in place — never change it. `BUNDLE_IDENTIFIER` in the spec is the macOS
+equivalent, and is equally permanent.

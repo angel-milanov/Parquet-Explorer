@@ -14,6 +14,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Windows installer, built with Inno Setup (`uv run poe installer`) and attached to
   releases. Installs per user, adds a Start menu entry, and optionally registers
   Parquet Explorer as a handler for `.parquet` files.
+- macOS disk image (`uv run poe dmg`), attached to releases. Ships
+  `Parquet Explorer.app` next to an Applications shortcut to drag it onto. The app
+  is ad-hoc signed but not notarised, so the first launch needs right-click → Open.
 - Project commands are declared in `[tool.poe.tasks]`; `uv run poe` lists them.
 - Application icon, drawn in code and used for the window, the taskbar and the
   Windows executable.
