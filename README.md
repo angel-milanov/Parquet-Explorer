@@ -12,7 +12,7 @@ A small desktop app built on [Qt](https://doc.qt.io/qtforpython/) and
 [![CI](https://github.com/angel-milanov/parquet-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/angel-milanov/parquet-explorer/actions/workflows/ci.yml)
 [![Docs](https://github.com/angel-milanov/parquet-explorer/actions/workflows/docs.yml/badge.svg)](https://angel-milanov.github.io/parquet-explorer/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10%20%E2%80%93%203.14-blue)](pyproject.toml)
+[![Python](https://img.shields.io/badge/python-3.14%2B-blue)](pyproject.toml)
 
 [**Documentation**](https://angel-milanov.github.io/parquet-explorer/) ·
 [Install](https://angel-milanov.github.io/parquet-explorer/installation/) ·

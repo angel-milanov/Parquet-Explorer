@@ -5,7 +5,8 @@ welcome.
 
 ## Getting set up
 
-You need [uv](https://docs.astral.sh/uv/) and Python 3.10 or newer.
+You need [uv](https://docs.astral.sh/uv/) and Python 3.14 or newer. `uv sync` will
+download a suitable interpreter if you don't have one.
 
 ```bash
 git clone https://github.com/angel-milanov/parquet-explorer

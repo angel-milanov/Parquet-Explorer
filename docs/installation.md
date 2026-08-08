@@ -61,8 +61,12 @@ pipx install parquet-explorer
 
 Plain `pip install parquet-explorer` works too, in a virtual environment.
 
-Python 3.10 or newer is required. PySide6 and DuckDB ship wheels for every
+Python 3.14 or newer is required. PySide6 and DuckDB ship wheels for every
 supported platform, so there is nothing to compile.
+
+If your system Python is older, `uv tool install` will fetch a suitable
+interpreter for you; the standalone builds above bundle their own and do not care
+what you have installed.
 
 ## From source
 
