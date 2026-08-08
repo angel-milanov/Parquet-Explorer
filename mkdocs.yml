@@ -1,0 +1,83 @@
+site_name: Parquet Explorer
+site_description: Open a Parquet file, run DuckDB SQL against it, read the results in a grid.
+site_url: https://angel-milanov.github.io/parquet-explorer/
+repo_url: https://github.com/angel-milanov/parquet-explorer
+repo_name: angel-milanov/parquet-explorer
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 Angel Milanov — MIT licensed
+
+theme:
+  name: material
+  favicon: assets/favicon.ico
+  icon:
+    logo: material/table-large
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Follow the system theme
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.action.edit
+    - content.code.copy
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Using the app: usage.md
+  - Contributing: contributing.md
+  - Packaging: packaging.md
+  - Changelog: changelog.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  # CONTRIBUTING.md and CHANGELOG.md live at the repository root so GitHub shows
+  # them; the matching pages here are one-line snippet includes of those files.
+  - pymdownx.snippets:
+      base_path: [.]
+      check_paths: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/angel-milanov/parquet-explorer
+      name: Parquet Explorer on GitHub
+
+watch:
+  - docs

@@ -1,0 +1,5 @@
+# Normalise line endings so CI shell steps behave the same on every platform.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.parquet binary

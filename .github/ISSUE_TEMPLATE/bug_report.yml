@@ -1,0 +1,57 @@
+name: Bug report
+description: Something doesn't work the way it should
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: >
+        The query you ran and the schema of the file (the Column panel, or the
+        output of `DESCRIBE data`). A small file that reproduces it is ideal.
+      placeholder: |
+        1. Open a file with schema ...
+        2. Run: SELECT ...
+        3. See error ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `parquet-explorer --version`
+      placeholder: parquet-explorer 0.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Linux, macOS, Windows]
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options: [Standalone release build, pip / uv / pipx, From source]
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output
+      description: Any traceback or message shown above the grid. Pasted here it gets formatted automatically.
+      render: shell

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or idea
+    url: https://github.com/angel-milanov/parquet-explorer/discussions
+    about: For open-ended questions, use Discussions rather than an issue.

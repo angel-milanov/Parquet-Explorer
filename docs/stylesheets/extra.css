@@ -1,0 +1,12 @@
+/* Screenshots are dark-UI captures; a soft border keeps them from bleeding into
+   the page background in light mode without boxing them in when dark. */
+.screenshot {
+  border-radius: 6px;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  box-shadow: 0 2px 12px rgb(0 0 0 / 12%);
+}
+
+/* Give the console blocks in the install guide a little more presence. */
+.md-typeset .highlight > pre > code {
+  border-radius: 4px;
+}
