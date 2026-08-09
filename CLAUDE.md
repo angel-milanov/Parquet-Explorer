@@ -101,12 +101,29 @@ with a plain test; widget behaviour gets a `gui`-marked test.
 `packaging/parquet-explorer.spec` builds a one-dir bundle (not `--onefile`: Qt's
 shared libraries make unpacking slow on every launch) and excludes the Qt modules
 the app never uses. On Windows it also embeds the icon and a version resource, and
-sets `hide_console="hide-early"` so a double-click gets no console window while
-`--version` still prints from a terminal.
+sets `console=False` on Windows, so the exe is a GUI-subsystem program and Windows
+never creates a console for it. `--noconsole` and `--windowed` are the CLI
+spellings of that flag; spec files ignore CLI flags, so it belongs here.
+
+The rejected alternative was `console=True` with `hide_console="hide-early"`, which
+lets Windows create the console and hides it a moment later — measured at ~30 ms
+visible on a cold launch, and no help at all when the console is delegated to
+Windows Terminal, since that window belongs to a different process.
+
+What `console=False` costs is narrow and worth knowing: cmd and PowerShell do not
+*wait* for a GUI program, so `parquet-explorer --version` typed at a prompt returns
+before the output arrives. Redirects and pipes still capture it, because a GUI
+process inherits the handles its launcher passes. There is deliberately no second
+console executable — the CLI is an optional file argument, `--version` and `--help`,
+which does not justify shipping two programs.
 
 `--version` intentionally reports the DuckDB and Qt versions as well as the app's.
 The release workflow greps that output as its smoke test, so it fails loudly if
-either library did not make it into the bundle.
+either library did not make it into the bundle. That step must stay on `shell: bash`
+with its pipe — bash waits for the process and the pipe gives the output somewhere
+to land, where PowerShell would capture nothing. A following step asserts the PE
+subsystem byte is 2, since the smoke test passes either way and nothing else would
+notice a console reappearing on every launch.
 
 On macOS the spec additionally wraps that bundle in `Parquet Explorer.app`, which
 `packaging/build_dmg.py` ad-hoc-signs (Apple silicon will not run unsigned code) and

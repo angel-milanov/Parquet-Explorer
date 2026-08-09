@@ -77,6 +77,11 @@ jobs:
         shell: bash
         # --version loads DuckDB and Qt to report their versions, so this fails
         # loudly if either failed to make it into the bundle.
+        #
+        # The Windows exe is a GUI program, which is why this step must stay on
+        # `shell: bash` and keep the pipe: bash waits for the process and the pipe
+        # gives its output somewhere to land.  Rewriting this in PowerShell, or
+        # dropping the `| tee`, would silently capture nothing.
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
             BINARY=./dist/parquet-explorer/parquet-explorer.exe
@@ -86,6 +91,24 @@ jobs:
           "$BINARY" --version | tee version.txt
           grep -q "DuckDB" version.txt
           grep -q "Qt" version.txt
+
+      - name: Check the Windows exe opens no console
+        if: runner.os == 'Windows'
+        shell: bash
+        # The step above passes either way, so assert the PE subsystem byte itself:
+        # 2 is WINDOWS_GUI, 3 is WINDOWS_CUI and would put a console window back on
+        # every launch.
+        run: |
+          uv run python - ./dist/parquet-explorer/parquet-explorer.exe <<'PY'
+          import struct, sys
+
+          header = open(sys.argv[1], "rb").read(0x400)
+          pe = struct.unpack_from("<I", header, 0x3C)[0]
+          subsystem = struct.unpack_from("<H", header, pe + 24 + 68)[0]
+          if subsystem != 2:
+              sys.exit(f"expected a GUI executable (subsystem 2), got {subsystem}")
+          print("subsystem 2 (WINDOWS_GUI) — no console on launch")
+          PY
 
       - name: Package archive
         shell: bash

@@ -94,3 +94,12 @@ parquet-explorer 0.1.0 (DuckDB 1.5.5, PySide6 6.11.1, Qt 6.11.1)
 
 The DuckDB and Qt versions are reported alongside the app's own — that is the line
 to paste into a bug report.
+
+!!! note "On the standalone Windows build"
+
+    `parquet-explorer.exe` is a GUI program, so that launching it never opens a
+    console window — and `cmd` and PowerShell return to the prompt without waiting
+    for it, so `--version` has nowhere to print. The app version is in the window
+    title, and in right-click → *Properties* → *Details*.
+
+    The PyPI install is an ordinary console program and prints as shown above.

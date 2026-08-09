@@ -23,11 +23,23 @@ it:
   Multimedia and more; the app touches none of them, and dropping them roughly
   halves the archive.
 
-On Windows the executable also gets an icon, a version resource (the product name,
-version and copyright that File Explorer shows under *Details*), and
-`hide_console="hide-early"` — so a double-click opens the GUI with no console
-window behind it, while `parquet-explorer --version` still prints when run from a
-terminal.
+On Windows the executable also gets an icon and a version resource — the product
+name, version and copyright that File Explorer shows under *Details*.
+
+### No console window on Windows
+
+The Windows executable is built `console=False` — a GUI-subsystem program, which
+Windows never gives a console. Launching the app shows no terminal, at any point.
+
+The alternative, `hide_console="hide-early"`, lets Windows create the console and
+hides it once the bootloader is running. That leaves it visible for roughly 30 ms
+on a cold launch, and does nothing at all when the console has been delegated to
+Windows Terminal, because that window belongs to a different process.
+
+The trade-off is that `cmd` and PowerShell do not wait for a GUI program, so
+`parquet-explorer --version` typed at a prompt comes back before the output does.
+Redirecting or piping still captures it, since a GUI process inherits the handles
+its launcher passes — which is how the release smoke test reads it.
 
 ## Windows installer
 
@@ -131,7 +143,10 @@ then builds, in parallel:
 
 Each bundle is smoke-tested by running `--version` and grepping the output for
 DuckDB and Qt. Because `--version` has to import both libraries to report their
-versions, that check fails loudly if either did not make it into the bundle.
+versions, that check fails loudly if either did not make it into the bundle. It runs
+under `bash` and pipes the output, which is what lets it read a GUI program on
+Windows; a further step asserts that executable's subsystem byte, so a console
+window cannot quietly come back.
 
 Everything is then attached to a GitHub release with generated notes, which is what
 gives users a [releases page](https://github.com/angel-milanov/parquet-explorer/releases)

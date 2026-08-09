@@ -120,11 +120,24 @@ executable = EXE(
     upx=False,
     icon=os.path.join(SPEC_DIR, "icon.ico") if IS_WINDOWS else None,
     version=windows_version_resource() if IS_WINDOWS else None,
-    # Console-enabled so `--version` and `--help` print when the exe is run from
-    # a terminal, but the console the bootloader opens on a double-click is hidden
-    # straight away — a GUI app should not sit behind a black window.
-    console=True,
-    hide_console="hide-early" if IS_WINDOWS else None,
+    # On Windows this is a GUI-subsystem executable, so Windows never creates a
+    # console for it and launching the app shows no terminal at all.  `--noconsole`
+    # and `--windowed` are the command-line spellings of this; a spec file ignores
+    # command-line flags, so it has to be set here.
+    #
+    # The rejected alternative was console=True plus hide_console="hide-early",
+    # which lets Windows create the console and hides it afterwards: measured at
+    # ~30 ms visible on a cold launch, and no help whatever when the console is
+    # delegated to Windows Terminal, because that window belongs to another process.
+    #
+    # The cost is that cmd and PowerShell do not *wait* for a GUI program, so typing
+    # `parquet-explorer --version` at a prompt returns before the output arrives.
+    # Nothing depends on that: a GUI process still inherits the handles its launcher
+    # passes it, so redirects and pipes capture --version normally, which is how the
+    # release smoke test reads it (under `shell: bash`, which does wait).  The app
+    # has no CLI beyond an optional file argument, --version and --help, so this is
+    # not worth a second console executable.
+    console=not IS_WINDOWS,
 )
 
 collection = COLLECT(
@@ -153,11 +166,11 @@ if IS_MACOS:
             "CFBundleVersion": __version__,
             "LSApplicationCategoryType": "public.app-category.developer-tools",
             "LSMinimumSystemVersion": "12.0",
-            # PyInstaller reads console=True above as "this is a command-line tool"
-            # and defaults the bundle to LSBackgroundOnly, which would leave the app
-            # with no Dock icon and no menu bar.  The keys given here are merged over
-            # its defaults, so saying so plainly is the fix; the flag is only about
-            # the Windows console anyway.
+            # The macOS executable is built console=True (the split above is Windows
+            # only), and PyInstaller reads that as "this is a command-line tool",
+            # defaulting the bundle to LSBackgroundOnly — which would leave the app
+            # with no Dock icon and no menu bar.  The keys here are merged over its
+            # defaults, so saying so plainly is the fix.
             "LSBackgroundOnly": False,
             "NSHighResolutionCapable": True,
             "NSHumanReadableCopyright": "Copyright (c) 2026 Angel Milanov. MIT licensed.",

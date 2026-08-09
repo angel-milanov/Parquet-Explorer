@@ -26,8 +26,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - `--version` now also reports the DuckDB, PySide6 and Qt versions.
-- Windows builds hide the console window the bootloader opens on a double-click,
-  while keeping `--version` and `--help` working from a terminal.
+- Windows builds no longer show a console window when the app is launched: the
+  executable is now a GUI program rather than a console one whose window was
+  hidden after the fact. `--version` and `--help` still work when redirected or
+  piped, but `cmd` and PowerShell do not wait for a GUI program, so they print
+  nothing when typed at a prompt.
 
 ## [0.1.0] - 2026-08-07
 
