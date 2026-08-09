@@ -44,9 +44,9 @@ uv run pytest
 
 Open an issue with the Parquet file's schema (or a small file that reproduces it),
 the query you ran, what you expected, and what happened. Include your OS and the
-output of `parquet-explorer --version` — or, on the standalone Windows build, the
-version from the app's window title, since that executable is a GUI program and
-prints nothing at a prompt.
+output of `parquet-explorer --version` — or, on the standalone Windows build, use
+**Help → About Parquet Explorer → Copy version info**, since that executable is a
+GUI program and prints nothing at a prompt.
 
 ## Code of conduct
 

@@ -37,6 +37,8 @@ A small desktop app built on [Qt](https://doc.qt.io/qtforpython/) and
 - **Browse the schema** in the side panel; double-click a column to insert its name
   into the editor.
 - **Export** the current query's result to CSV.
+- **Help → About** for the version of the app and the libraries under it, plus the
+  full license text of everything shipped.
 
 Query errors appear inline above the grid with DuckDB's message, and the previous
 result stays on screen so a typo doesn't lose your place.
@@ -97,13 +99,14 @@ uv run mypy               # type-check
 
 The GUI tests run headless via `QT_QPA_PLATFORM=offscreen`, which CI sets for you.
 
-The code is three modules:
+The code is a handful of modules:
 
 | Module | Responsibility |
 | --- | --- |
 | `parquet_explorer/data.py` | DuckDB connection, opening files, running SQL, CSV export. No Qt. |
 | `parquet_explorer/models.py` | `QAbstractTableModel` that renders a result in the grid. |
 | `parquet_explorer/window.py` | The window: toolbar, schema panel, editor, grid, status bar. |
+| `parquet_explorer/about.py` | The About dialog, over `licenses.py` and `license_texts.py`. |
 
 Multi-step packaging commands are named in `[tool.poe.tasks]`; `uv run poe` lists
 them. `bundle` builds the standalone app, `installer` builds the Windows installer,
@@ -119,4 +122,5 @@ releases are built.
 
 Parquet Explorer links against Qt through PySide6, which is licensed under the
 LGPL v3. The standalone bundles therefore redistribute LGPL Qt libraries alongside
-the MIT-licensed application code.
+the MIT-licensed application code. Every license the app ships under is reproduced
+in full under **Help → About Parquet Explorer → Licenses**.

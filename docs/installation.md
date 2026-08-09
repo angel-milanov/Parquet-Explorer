@@ -99,7 +99,9 @@ to paste into a bug report.
 
     `parquet-explorer.exe` is a GUI program, so that launching it never opens a
     console window — and `cmd` and PowerShell return to the prompt without waiting
-    for it, so `--version` has nowhere to print. The app version is in the window
-    title, and in right-click → *Properties* → *Details*.
+    for it, so `--version` has nowhere to print. Use **Help → About Parquet
+    Explorer** instead: it shows the same line and has a button that copies it.
+    The version is also in the window title and in right-click → *Properties* →
+    *Details*.
 
     The PyPI install is an ordinary console program and prints as shown above.

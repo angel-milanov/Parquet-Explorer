@@ -40,13 +40,16 @@ The shell here is PowerShell. Setting an env var for one command is
 
 ## Architecture
 
-Three modules under `src/parquet_explorer/`, layered so the logic is testable
-without a display:
+Modules under `src/parquet_explorer/`, layered so the logic is testable without a
+display:
 
 - **`data.py`** — the DuckDB session. Deliberately imports no Qt. Everything that
   touches the database lives here and is covered by plain (non-GUI) tests.
 - **`models.py`** — adapts a `QueryResult` to `QAbstractTableModel` for the grid.
 - **`window.py`** — `MainWindow`: schema panel, SQL editor, results grid, status bar.
+- **`about.py`** — the About dialog: version details and the license texts.
+- **`licenses.py`** — what ships and under which license, with no widgets involved,
+  so the list has plain tests. **`license_texts.py`** holds the texts themselves.
 
 `app.py` is the entry point (argument parsing, `QApplication` setup) and `icon.py`
 draws the application icon. Keep `data.py` free of Qt imports — that boundary is
@@ -81,7 +84,17 @@ PyInstaller needs a file at build time. Both are written on any platform — an
 
 **Version is single-sourced.** `__init__.__version__` feeds the CLI banner, the
 Windows version resource in the PyInstaller spec, and the installer version that
-`build_installer.py` passes to Inno Setup as `/DAppVersion`.
+`build_installer.py` passes to Inno Setup as `/DAppVersion`. The About dialog shows
+`app.version_string()` — the same banner `--version` prints — rather than composing
+its own, which is why `about.py` imports from `app.py` and not the other way round.
+
+**License texts are Python, not package data.** `license_texts.py` holds each
+license verbatim as a module constant, for the same reason `icon.py` draws rather
+than ships a PNG: a plain import cannot go missing from a wheel or a PyInstaller
+bundle. They are copies of upstream files — re-copy rather than edit, and keep them
+wrapped at 78 columns, which `tests/test_licenses.py` enforces because `about.py`
+shows them without re-wrapping. `licenses.py` deliberately appends the GPL v3 to
+the LGPL v3, since the LGPL states in its own opening that it incorporates it.
 
 ## Testing
 

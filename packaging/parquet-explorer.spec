@@ -166,8 +166,8 @@ if IS_MACOS:
             "CFBundleVersion": __version__,
             "LSApplicationCategoryType": "public.app-category.developer-tools",
             "LSMinimumSystemVersion": "12.0",
-            # The macOS executable is built console=True (the split above is Windows
-            # only), and PyInstaller reads that as "this is a command-line tool",
+            # The macOS executable is built console=True (only Windows is the
+            # exception), and PyInstaller reads that as "this is a command-line tool",
             # defaulting the bundle to LSBackgroundOnly — which would leave the app
             # with no Dock icon and no menu bar.  The keys here are merged over its
             # defaults, so saying so plainly is the fix.

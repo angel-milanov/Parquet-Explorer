@@ -8,6 +8,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Help → About Parquet Explorer**, an information dialog in two tabs. The first
+  repeats the `--version` line, with a button that copies it for a bug report; the
+  second lists everything the app ships and shows the full text of its license —
+  Parquet Explorer and DuckDB (MIT), PySide6 and Qt (GNU LGPL v3, followed by the
+  GNU GPL v3 it incorporates), and Python (PSF License Agreement).
 - Documentation site built with Material for MkDocs and published to GitHub Pages
   on every push to `main`.
 

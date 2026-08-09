@@ -142,6 +142,19 @@ COPY (SELECT * FROM data WHERE revenue > 1000)
 TO 'big-spenders.parquet' (FORMAT PARQUET);
 ```
 
+## Versions and licenses
+
+**Help → About Parquet Explorer** has two tabs. The first repeats the `--version`
+line — the app's version together with the DuckDB, PySide6 and Qt versions it is
+running against — with a **Copy version info** button, which is the easiest way to
+get that line for a bug report. On the standalone Windows build it is the *only*
+way, since that executable is a GUI program and prints nothing at a prompt.
+
+The second lists everything the app ships and shows the full text of each license:
+Parquet Explorer and DuckDB under the MIT license, PySide6 and Qt under the GNU
+LGPL v3, and Python under the PSF License Agreement. The LGPL text is followed by
+the GNU GPL v3, whose terms it incorporates by reference.
+
 ## Limits worth knowing
 
 !!! warning "Results are fully materialised"

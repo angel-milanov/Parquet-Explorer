@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from parquet_explorer import __version__
+from parquet_explorer.about import AboutDialog
 from parquet_explorer.data import DEFAULT_QUERY, ParquetSession, QueryError
 from parquet_explorer.models import QueryResultModel
 
@@ -131,6 +132,13 @@ class MainWindow(QMainWindow):
         self.quit_action.setShortcut(QKeySequence.StandardKey.Quit)
         self.quit_action.triggered.connect(self.close)
 
+        self.about_action = QAction("&About Parquet Explorer", self)
+        # AboutRole moves it into the application menu on macOS, where a Help
+        # menu entry named "About …" is not where anyone looks for it.
+        self.about_action.setMenuRole(QAction.MenuRole.AboutRole)
+        self.about_action.setStatusTip("Version details and open source licenses")
+        self.about_action.triggered.connect(self.show_about)
+
         file_menu = self.menuBar().addMenu("&File")
         file_menu.addAction(self.open_action)
         file_menu.addAction(self.export_action)
@@ -139,6 +147,9 @@ class MainWindow(QMainWindow):
 
         query_menu = self.menuBar().addMenu("&Query")
         query_menu.addAction(self.run_action)
+
+        help_menu = self.menuBar().addMenu("&Help")
+        help_menu.addAction(self.about_action)
 
         toolbar = self.addToolBar("Main")
         toolbar.setMovable(False)
@@ -215,6 +226,10 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Export failed", str(exc))
             return
         self.statusBar().showMessage(f"Exported to {path}", 5000)
+
+    def show_about(self) -> None:
+        """Open the About dialog — version details and the licenses shipped."""
+        AboutDialog(self).exec()
 
     # -- helpers ------------------------------------------------------------
 
