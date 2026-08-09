@@ -8,6 +8,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Avro schema view: **File → Avro Schema…** (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> +
+  <kbd>A</kbd>) shows the open file's structure as an Avro record (`.avsc`) with a
+  button to copy it, and **File → Copy Avro Schema** (<kbd>Ctrl</kbd> +
+  <kbd>Shift</kbd> + <kbd>C</kbd>) puts it straight on the clipboard. The schema is
+  decoded from the Parquet footer itself, so nullability, logical types and nested
+  lists, maps and structs all survive the translation.
 - **Help → About Parquet Explorer**, an information dialog in two tabs. The first
   repeats the `--version` line, with a button that copies it for a bug report; the
   second lists everything the app ships and shows the full text of its license —

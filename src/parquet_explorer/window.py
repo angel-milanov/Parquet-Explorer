@@ -4,16 +4,26 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt
-from PySide6.QtGui import QAction, QDragEnterEvent, QDropEvent, QFont, QKeySequence
+from PySide6.QtCore import QSettings, Qt, QTimer
+from PySide6.QtGui import (
+    QAction,
+    QDragEnterEvent,
+    QDropEvent,
+    QFont,
+    QGuiApplication,
+    QKeySequence,
+)
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QDialog,
     QFileDialog,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
     QMainWindow,
     QMessageBox,
     QPlainTextEdit,
+    QPushButton,
     QSplitter,
     QTableView,
     QTreeWidget,
@@ -24,8 +34,10 @@ from PySide6.QtWidgets import (
 
 from parquet_explorer import __version__
 from parquet_explorer.about import AboutDialog
+from parquet_explorer.avro import avro_schema_json
 from parquet_explorer.data import DEFAULT_QUERY, ParquetSession, QueryError
 from parquet_explorer.models import QueryResultModel
+from parquet_explorer.parquet_schema import SchemaError
 
 PARQUET_FILTER = "Parquet files (*.parquet *.pq);;All files (*)"
 
@@ -37,6 +49,56 @@ def _monospace_font() -> QFont:
     return font
 
 
+class AvroSchemaDialog(QDialog):
+    """The open file's schema as an Avro record, with a button to copy it."""
+
+    #: How long the copy button confirms itself before going back to normal.
+    CONFIRM_MS = 1500
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.resize(640, 560)
+
+        self.view = QPlainTextEdit()
+        self.view.setReadOnly(True)
+        self.view.setFont(_monospace_font())
+        self.view.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+
+        self.copy_button = QPushButton("&Copy to Clipboard")
+        self.copy_button.setDefault(True)
+        self.copy_button.clicked.connect(self.copy)
+
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.reject)
+
+        buttons = QHBoxLayout()
+        buttons.addStretch(1)
+        buttons.addWidget(self.copy_button)
+        buttons.addWidget(close_button)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.view)
+        layout.addLayout(buttons)
+
+    @property
+    def text(self) -> str:
+        return self.view.toPlainText()
+
+    def set_schema(self, text: str, file_name: str) -> None:
+        self.setWindowTitle(f"Avro schema — {file_name}")
+        self.view.setPlainText(text)
+
+    def copy(self) -> None:
+        QGuiApplication.clipboard().setText(self.text)
+        self.copy_button.setText("Copied")
+        # Passing self as the timer's context means a dialog destroyed inside the
+        # confirmation window takes the pending callback with it.
+        QTimer.singleShot(self.CONFIRM_MS, self, self._restore_copy_button)
+
+    def _restore_copy_button(self) -> None:
+        self.copy_button.setText("&Copy to Clipboard")
+
+
 class MainWindow(QMainWindow):
     """Open a Parquet file, edit the query, run it, look at the rows."""
 
@@ -44,6 +106,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.session = session or ParquetSession()
         self.model = QueryResultModel(parent=self)
+        self.avro_dialog: AvroSchemaDialog | None = None
         self._settings = QSettings("parquet-explorer", "parquet-explorer")
 
         self.setWindowTitle(f"Parquet Explorer {__version__}")
@@ -128,6 +191,16 @@ class MainWindow(QMainWindow):
         self.export_action.setStatusTip("Write the current query's result to a CSV file")
         self.export_action.triggered.connect(self.export_csv)
 
+        self.avro_action = QAction("&Avro Schema…", self)
+        self.avro_action.setShortcut(QKeySequence("Ctrl+Shift+A"))
+        self.avro_action.setStatusTip("Show the file's schema as an Avro record (.avsc)")
+        self.avro_action.triggered.connect(self.show_avro_schema)
+
+        self.copy_avro_action = QAction("Copy Avro &Schema", self)
+        self.copy_avro_action.setShortcut(QKeySequence("Ctrl+Shift+C"))
+        self.copy_avro_action.setStatusTip("Copy the file's Avro schema (.avsc) to the clipboard")
+        self.copy_avro_action.triggered.connect(self.copy_avro_schema)
+
         self.quit_action = QAction("&Quit", self)
         self.quit_action.setShortcut(QKeySequence.StandardKey.Quit)
         self.quit_action.triggered.connect(self.close)
@@ -143,6 +216,9 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self.open_action)
         file_menu.addAction(self.export_action)
         file_menu.addSeparator()
+        file_menu.addAction(self.avro_action)
+        file_menu.addAction(self.copy_avro_action)
+        file_menu.addSeparator()
         file_menu.addAction(self.quit_action)
 
         query_menu = self.menuBar().addMenu("&Query")
@@ -156,6 +232,7 @@ class MainWindow(QMainWindow):
         toolbar.addAction(self.open_action)
         toolbar.addAction(self.run_action)
         toolbar.addAction(self.export_action)
+        toolbar.addAction(self.avro_action)
 
     # -- actions ------------------------------------------------------------
 
@@ -182,6 +259,7 @@ class MainWindow(QMainWindow):
         self.editor.setPlainText(DEFAULT_QUERY)
         self.setWindowTitle(f"{Path(path).name} — Parquet Explorer {__version__}")
         self._update_enabled_state()
+        self._sync_avro_dialog()
         self.run_query()
 
     def run_query(self) -> None:
@@ -227,11 +305,57 @@ class MainWindow(QMainWindow):
             return
         self.statusBar().showMessage(f"Exported to {path}", 5000)
 
+    def show_avro_schema(self) -> None:
+        """Open (or refocus) the window showing the file's Avro schema."""
+        text = self._avro_schema()
+        if text is None:
+            return
+        if self.avro_dialog is None:
+            self.avro_dialog = AvroSchemaDialog(self)
+        self.avro_dialog.set_schema(text, self._file_name())
+        self.avro_dialog.show()
+        self.avro_dialog.raise_()
+        self.avro_dialog.activateWindow()
+
+    def copy_avro_schema(self) -> None:
+        """Put the file's Avro schema on the clipboard without opening anything."""
+        text = self._avro_schema()
+        if text is None:
+            return
+        QGuiApplication.clipboard().setText(text)
+        self.statusBar().showMessage("Avro schema copied to the clipboard", 5000)
+
     def show_about(self) -> None:
         """Open the About dialog — version details and the licenses shipped."""
         AboutDialog(self).exec()
 
     # -- helpers ------------------------------------------------------------
+
+    def _avro_schema(self) -> str | None:
+        """The open file's Avro schema, or ``None`` after reporting why not.
+
+        The schema is read from the Parquet footer rather than from the ``data``
+        view, so it is derived afresh each time and never goes stale.
+        """
+        path = self.session.path
+        if not path:
+            return None
+        try:
+            return avro_schema_json(path)
+        except SchemaError as exc:
+            QMessageBox.warning(self, "Avro schema", f"Could not read the schema.\n\n{exc}")
+            return None
+
+    def _file_name(self) -> str:
+        return Path(self.session.path).name if self.session.path else ""
+
+    def _sync_avro_dialog(self) -> None:
+        """Keep an open schema window in step with a newly opened file."""
+        if self.avro_dialog is None or not self.avro_dialog.isVisible():
+            return
+        text = self._avro_schema()
+        if text is not None:
+            self.avro_dialog.set_schema(text, self._file_name())
 
     def _insert_column_name(self, item: QTreeWidgetItem) -> None:
         self.editor.insertPlainText(item.text(0))
@@ -256,6 +380,8 @@ class MainWindow(QMainWindow):
         is_open = self.session.is_open
         self.run_action.setEnabled(is_open)
         self.export_action.setEnabled(is_open)
+        self.avro_action.setEnabled(is_open)
+        self.copy_avro_action.setEnabled(is_open)
 
     # -- drag and drop ------------------------------------------------------
 

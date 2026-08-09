@@ -24,6 +24,11 @@ with [DuckDB](https://duckdb.org), and read the results in a data grid.
     Numbers right-aligned, `NULL`s rendered distinctly rather than as blanks, and
     the shape and timing of the query in the status bar.
 
+- :material-code-json: **[Read the schema as Avro](usage.md#the-schema-as-avro)**
+
+    Show the file's structure as an Avro record (`.avsc`) and copy it to the
+    clipboard — nested lists, maps and structs included.
+
 - :material-file-export-outline: **Export**
 
     Write whatever the current query returns to a CSV file.
