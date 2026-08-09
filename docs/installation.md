@@ -89,7 +89,7 @@ setup.
 
 ```console
 $ parquet-explorer --version
-parquet-explorer 0.1.0 (DuckDB 1.5.5, PySide6 6.11.1, Qt 6.11.1)
+parquet-explorer 0.2.0 (DuckDB 1.5.5, PySide6 6.11.1, Qt 6.11.1)
 ```
 
 The DuckDB and Qt versions are reported alongside the app's own — that is the line

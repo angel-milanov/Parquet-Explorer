@@ -130,8 +130,8 @@ match what the sources declare, so a stale icon fails CI rather than shipping.
 Tag a commit and push the tag:
 
 ```bash
-git tag -a v0.1.0 -m "v0.1.0"
-git push origin v0.1.0
+git tag -a v0.2.0 -m "v0.2.0"
+git push origin v0.2.0
 ```
 
 [`release.yml`](https://github.com/angel-milanov/parquet-explorer/blob/main/.github/workflows/release.yml)

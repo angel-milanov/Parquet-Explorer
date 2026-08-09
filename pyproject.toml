@@ -1,6 +1,6 @@
 [project]
 name = "parquet-explorer"
-version = "0.1.0"
+version = "0.2.0"
 description = "An advanced desktop explorer for Parquet files — browse schemas and metadata, run DuckDB SQL, and page through results in a fast data grid."
 readme = "README.md"
 license = "MIT"

@@ -6,6 +6,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-09
+
+Reads a file's schema as Avro, says what it is built from, and installs like a
+desktop application on Windows and macOS.
+
 ### Added
 
 - Avro schema view: **File → Avro Schema…** (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> +
@@ -13,26 +18,27 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   button to copy it, and **File → Copy Avro Schema** (<kbd>Ctrl</kbd> +
   <kbd>Shift</kbd> + <kbd>C</kbd>) puts it straight on the clipboard. The schema is
   decoded from the Parquet footer itself, so nullability, logical types and nested
-  lists, maps and structs all survive the translation.
+  lists, maps and structs all survive the translation. Three mappings are lossy by
+  design — `INT96` becomes `timestamp-micros`, unsigned 64-bit becomes `long`, and
+  `ENUM` becomes `string` — and nanosecond timestamps need an Avro 1.12 reader.
 - **Help → About Parquet Explorer**, an information dialog in two tabs. The first
   repeats the `--version` line, with a button that copies it for a bug report; the
   second lists everything the app ships and shows the full text of its license —
   Parquet Explorer and DuckDB (MIT), PySide6 and Qt (GNU LGPL v3, followed by the
   GNU GPL v3 it incorporates), and Python (PSF License Agreement).
-- Documentation site built with Material for MkDocs and published to GitHub Pages
-  on every push to `main`.
-
 - Windows installer, built with Inno Setup (`uv run poe installer`) and attached to
   releases. Installs per user, adds a Start menu entry, and optionally registers
   Parquet Explorer as a handler for `.parquet` files.
 - macOS disk image (`uv run poe dmg`), attached to releases. Ships
   `Parquet Explorer.app` next to an Applications shortcut to drag it onto. The app
   is ad-hoc signed but not notarised, so the first launch needs right-click → Open.
-- Project commands are declared in `[tool.poe.tasks]`; `uv run poe` lists them.
 - Application icon, drawn in code and used for the window, the taskbar and the
   Windows executable.
 - Windows executables carry a version resource, so File Explorer shows the product
   name, version and copyright.
+- Documentation site built with Material for MkDocs and published to GitHub Pages
+  on every push to `main`.
+- Project commands are declared in `[tool.poe.tasks]`; `uv run poe` lists them.
 
 ### Changed
 
@@ -41,7 +47,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   executable is now a GUI program rather than a console one whose window was
   hidden after the fact. `--version` and `--help` still work when redirected or
   piped, but `cmd` and PowerShell do not wait for a GUI program, so they print
-  nothing when typed at a prompt.
+  nothing when typed at a prompt — use **Help → About Parquet Explorer** there.
 
 ## [0.1.0] - 2026-08-07
 
@@ -60,5 +66,6 @@ First release.
 - CSV export of the current query's result.
 - Row count, column count and elapsed time in the status bar.
 
-[Unreleased]: https://github.com/angel-milanov/parquet-explorer/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/angel-milanov/parquet-explorer/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/angel-milanov/parquet-explorer/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/angel-milanov/parquet-explorer/releases/tag/v0.1.0
