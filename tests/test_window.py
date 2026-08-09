@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import csv
+import json
 from pathlib import Path
 
 import pytest
+from PySide6.QtGui import QGuiApplication
 
 from parquet_explorer.data import TABLE_NAME, ParquetSession
-from parquet_explorer.window import MainWindow
+from parquet_explorer.parquet_schema import SchemaError
+from parquet_explorer.window import AvroSchemaDialog, MainWindow
 
 pytestmark = pytest.mark.gui
 
@@ -21,6 +24,8 @@ def window(qtbot) -> MainWindow:
 def test_starts_with_run_and_export_disabled(window: MainWindow) -> None:
     assert window.run_action.isEnabled() is False
     assert window.export_action.isEnabled() is False
+    assert window.avro_action.isEnabled() is False
+    assert window.copy_avro_action.isEnabled() is False
     assert window.model.rowCount() == 0
 
 
@@ -167,3 +172,124 @@ def test_choose_file_opens_the_selected_path(
     window.choose_file()
 
     assert window.model.rowCount() == 100
+
+
+# -- Avro schema ------------------------------------------------------------
+
+
+def test_opening_a_file_enables_the_avro_actions(window: MainWindow, sample_parquet: Path) -> None:
+    window.open_file(sample_parquet)
+
+    assert window.avro_action.isEnabled() is True
+    assert window.copy_avro_action.isEnabled() is True
+
+
+def test_showing_the_schema_opens_a_dialog_with_the_avsc(
+    window: MainWindow, qtbot, sample_parquet: Path
+) -> None:
+    window.open_file(sample_parquet)
+
+    window.show_avro_schema()
+
+    dialog = window.avro_dialog
+    assert dialog is not None
+    qtbot.addWidget(dialog)
+    assert dialog.isVisible() is True
+    assert sample_parquet.name in dialog.windowTitle()
+    schema = json.loads(dialog.text)
+    assert schema["type"] == "record"
+    assert [entry["name"] for entry in schema["fields"]][:2] == ["id", "name"]
+
+
+def test_showing_the_schema_twice_reuses_the_dialog(
+    window: MainWindow, qtbot, sample_parquet: Path
+) -> None:
+    window.open_file(sample_parquet)
+
+    window.show_avro_schema()
+    first = window.avro_dialog
+    window.show_avro_schema()
+
+    assert window.avro_dialog is first
+    qtbot.addWidget(first)
+
+
+def test_opening_another_file_refreshes_a_visible_dialog(
+    window: MainWindow, qtbot, sample_parquet: Path, nested_parquet: Path
+) -> None:
+    window.open_file(sample_parquet)
+    window.show_avro_schema()
+    dialog = window.avro_dialog
+    assert dialog is not None
+    qtbot.addWidget(dialog)
+
+    window.open_file(nested_parquet)
+
+    assert nested_parquet.name in dialog.windowTitle()
+    assert "a_struct" in dialog.text
+
+
+def test_copying_the_schema_puts_it_on_the_clipboard(
+    window: MainWindow, sample_parquet: Path
+) -> None:
+    window.open_file(sample_parquet)
+
+    window.copy_avro_schema()
+
+    assert json.loads(QGuiApplication.clipboard().text())["name"] == sample_parquet.stem
+
+
+def test_the_dialog_copy_button_copies(window: MainWindow, qtbot, sample_parquet: Path) -> None:
+    window.open_file(sample_parquet)
+    window.show_avro_schema()
+    dialog = window.avro_dialog
+    assert dialog is not None
+    qtbot.addWidget(dialog)
+    QGuiApplication.clipboard().clear()
+
+    dialog.copy_button.click()
+
+    assert QGuiApplication.clipboard().text() == dialog.text
+    assert dialog.copy_button.text() == "Copied"
+
+
+def test_the_copy_confirmation_reverts(
+    window: MainWindow, qtbot, sample_parquet: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    window.open_file(sample_parquet)
+    window.show_avro_schema()
+    dialog = window.avro_dialog
+    assert dialog is not None
+    qtbot.addWidget(dialog)
+    monkeypatch.setattr(AvroSchemaDialog, "CONFIRM_MS", 10)
+
+    dialog.copy_button.click()
+
+    qtbot.waitUntil(lambda: dialog.copy_button.text() == "&Copy to Clipboard")
+
+
+def test_the_avro_actions_are_no_ops_without_an_open_file(window: MainWindow) -> None:
+    window.show_avro_schema()
+    window.copy_avro_schema()
+
+    assert window.avro_dialog is None
+
+
+def test_an_unreadable_schema_is_reported_instead_of_shown(
+    window: MainWindow, sample_parquet: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    window.open_file(sample_parquet)
+    warnings: list[str] = []
+    monkeypatch.setattr(
+        "parquet_explorer.window.avro_schema_json",
+        lambda *args, **kwargs: (_ for _ in ()).throw(SchemaError("footer is encrypted")),
+    )
+    monkeypatch.setattr(
+        "parquet_explorer.window.QMessageBox.warning",
+        lambda parent, title, text, *args, **kwargs: warnings.append(text),
+    )
+
+    window.show_avro_schema()
+
+    assert window.avro_dialog is None
+    assert "footer is encrypted" in warnings[0]

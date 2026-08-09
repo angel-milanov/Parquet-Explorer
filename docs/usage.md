@@ -41,6 +41,8 @@ which saves retyping `signup_date` for the third time.
 | ++ctrl+enter++ or ++f5++ | Run the query |
 | ++ctrl+o++ | Open a Parquet file |
 | ++ctrl+e++ | Export the result to CSV |
+| ++ctrl+shift+a++ | Show the schema as Avro |
+| ++ctrl+shift+c++ | Copy the Avro schema to the clipboard |
 
 The status bar reports the shape and cost of what came back:
 
@@ -128,6 +130,60 @@ SELECT * FROM parquet_file_metadata('sales.parquet');   -- writer, row groups, s
 SELECT * FROM parquet_schema('sales.parquet');          -- physical types, encodings
 SELECT * FROM parquet_metadata('sales.parquet');        -- per-row-group statistics
 ```
+
+## The schema as Avro
+
+**File → Avro Schema…** (++ctrl+shift+a++) shows the open file's structure as an
+Avro record schema — the contents of a `.avsc` file — with a **Copy to Clipboard**
+button. ++ctrl+shift+c++ skips the window and copies it directly.
+
+```json
+{
+  "type": "record",
+  "name": "sales",
+  "fields": [
+    { "name": "id", "type": ["null", "long"], "default": null },
+    { "name": "region", "type": ["null", "string"], "default": null },
+    { "name": "day", "type": ["null", { "type": "int", "logicalType": "date" }],
+      "default": null },
+    { "name": "tags", "type": ["null", { "type": "array", "items": ["null", "string"] }],
+      "default": null }
+  ]
+}
+```
+
+The record is named after the file, and the schema is read from the Parquet footer
+rather than from the `data` view — so it reflects the file itself, not the current
+query, and it does not change when you edit the SQL.
+
+Because the footer is the source, the details Avro cares about survive:
+
+- **Nullability** comes from each field's repetition. An `optional` field becomes a
+  `["null", T]` union defaulting to `null`; a `required` one stays bare.
+- **Nested types** keep their shape: structs become records, `LIST` groups become
+  arrays, and string-keyed `MAP` groups become Avro maps. The older two-level list
+  layouts are understood too.
+- **Logical types** carry over: dates, times and timestamps (including the
+  UTC-adjusted / local distinction), decimals with their precision and scale, and
+  UUIDs.
+
+Three things have no exact Avro equivalent and are widened on purpose:
+
+| Parquet | Avro | Why |
+| --- | --- | --- |
+| `INT96` | `timestamp-micros` | The legacy timestamp; the nanosecond digits are dropped. |
+| unsigned 64-bit | `long` | Avro has no unsigned types, so the top half of the range does not fit. |
+| `ENUM` | `string` | An Avro enum must list its symbols, and a Parquet footer does not record them. |
+
+!!! note "Maps with non-string keys"
+
+    Avro maps are string-keyed. A Parquet map keyed by anything else becomes an
+    array of `{key, value}` records instead, which is the usual way to spell it.
+
+!!! note "Nanosecond precision needs Avro 1.12"
+
+    `timestamp-nanos` and its siblings were added in Avro 1.12. Files written with
+    nanosecond times produce a schema that older Avro libraries will reject.
 
 ## Exporting
 

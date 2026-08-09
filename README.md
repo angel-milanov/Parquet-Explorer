@@ -36,6 +36,9 @@ A small desktop app built on [Qt](https://doc.qt.io/qtforpython/) and
   status bar.
 - **Browse the schema** in the side panel; double-click a column to insert its name
   into the editor.
+- **Read the schema as Avro** — <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd>
+  shows the file's structure as an Avro record (`.avsc`) and copies it to the
+  clipboard, nested lists, maps and structs included.
 - **Export** the current query's result to CSV.
 - **Help → About** for the version of the app and the libraries under it, plus the
   full license text of everything shipped.
@@ -80,6 +83,8 @@ parquet-explorer [file]
 | <kbd>Ctrl</kbd> + <kbd>O</kbd> | Open a Parquet file |
 | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> or <kbd>F5</kbd> | Run the query |
 | <kbd>Ctrl</kbd> + <kbd>E</kbd> | Export the result to CSV |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd> | Show the schema as Avro (`.avsc`) |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> | Copy the Avro schema to the clipboard |
 
 Results are fetched in full, so a query returning tens of millions of rows will use
 a matching amount of memory — keep a `LIMIT` on exploratory queries, or aggregate in
@@ -104,6 +109,8 @@ The code is a handful of modules:
 | Module | Responsibility |
 | --- | --- |
 | `parquet_explorer/data.py` | DuckDB connection, opening files, running SQL, CSV export. No Qt. |
+| `parquet_explorer/parquet_schema.py` | Decodes the Parquet footer to a schema tree. No Qt, no DuckDB. |
+| `parquet_explorer/avro.py` | Translates that tree into an Avro record schema. |
 | `parquet_explorer/models.py` | `QAbstractTableModel` that renders a result in the grid. |
 | `parquet_explorer/window.py` | The window: toolbar, schema panel, editor, grid, status bar. |
 | `parquet_explorer/about.py` | The About dialog, over `licenses.py` and `license_texts.py`. |

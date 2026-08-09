@@ -45,8 +45,12 @@ display:
 
 - **`data.py`** — the DuckDB session. Deliberately imports no Qt. Everything that
   touches the database lives here and is covered by plain (non-GUI) tests.
+- **`parquet_schema.py`** — decodes a Parquet footer into a schema tree. No Qt and
+  no DuckDB.
+- **`avro.py`** — translates that tree into an Avro record schema (`.avsc`).
 - **`models.py`** — adapts a `QueryResult` to `QAbstractTableModel` for the grid.
-- **`window.py`** — `MainWindow`: schema panel, SQL editor, results grid, status bar.
+- **`window.py`** — `MainWindow`: schema panel, SQL editor, results grid, status bar,
+  and `AvroSchemaDialog`.
 - **`about.py`** — the About dialog: version details and the license texts.
 - **`licenses.py`** — what ships and under which license, with no widgets involved,
   so the list has plain tests. **`license_texts.py`** holds the texts themselves.
@@ -72,6 +76,29 @@ and the status-bar wiring in `MainWindow.run_query()` all have to change togethe
 `MainWindow` shows that message in `error_label` above the grid and deliberately
 leaves the previous result in the model, so a typo does not wipe the screen. Tests
 assert both halves of that behaviour.
+
+**The Avro schema does not come from DuckDB.** `parquet_schema.read_schema()` reads
+the file's own footer — a Thrift compact-protocol `FileMetaData` — and rebuilds the
+schema tree from it. That is a deliberate choice, not an oversight: `DESCRIBE data`
+(and DuckDB's `parquet_schema()` table function) flattens away the three things the
+Avro mapping is built on — per-level repetition, which *is* the nullability; the
+logical-type annotations with their parameters; and the wrapper groups that spell
+out `LIST` and `MAP`, including the legacy two-level layouts. Adding pyarrow or
+fastparquet to read them instead was rejected too: a ~40 MB dependency in every
+PyInstaller bundle, and its nested types come back as *Arrow* types, so the
+Parquet-level detail would have to be dug back out anyway. Only
+`FileMetaData.schema` is decoded; the walk stops there rather than stepping over
+every row group's statistics, which is why the reader is O(schema) not O(footer).
+
+**Three Avro mappings are lossy on purpose.** `INT96` → `timestamp-micros`,
+unsigned 64-bit → `long`, `ENUM` → `string`. Each is documented in `avro.py`'s
+module docstring and in `docs/usage.md`, and each has a test — if you "fix" one,
+you are changing a decision, not a bug. Nanosecond logical types (`timestamp-nanos`
+and friends) need Avro 1.12 or later; that is also deliberate, the alternative
+being to silently round to microseconds. Avro's named types share one flat
+namespace, so `avro.py`'s `_Names` hands out unique record and fixed names — two
+structs called `address` in different branches would otherwise collide, and
+Parquet's own wrapper names (`element`, `key_value`, …) would leak into the output.
 
 **The icon has three representations.** `icon.py` draws it at runtime with QPainter
 (used for the window and taskbar); `packaging/make_icon.py` renders the same shapes
@@ -104,7 +131,13 @@ desktop they open real windows unless you set it yourself.
 
 `tests/conftest.py` builds the sample Parquet file once per session with a DuckDB
 `COPY`, covering ints, strings, floats, booleans, dates and a nullable column.
-Prefer extending that fixture over writing new Parquet files ad hoc.
+Prefer extending that fixture over writing new Parquet files ad hoc. `nested_parquet`
+is the second fixture, for lists, structs, maps and the annotated types the Avro
+mapping has to handle; it is separate because the grid tests assert on
+`sample_parquet`'s exact six-column shape. Note that DuckDB's writer marks every
+column `optional` and turns `i * 1.5` into a `DECIMAL`, so schema shapes it cannot
+produce — `required` fields, two-level lists, `INT96` — are tested against
+hand-built `SchemaNode` trees in `tests/test_avro.py`.
 
 New behaviour needs a test. Logic that does not need a widget belongs in `data.py`
 with a plain test; widget behaviour gets a `gui`-marked test.
